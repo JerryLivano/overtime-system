@@ -57,6 +57,26 @@ namespace API.Controllers
                 result)); // Tampilkan data yang sudah ditemukan
         }
 
+        [HttpGet("{nik}")]
+        public async Task<IActionResult> GetByNikAsync(string nik)
+        {
+            var result = await _employeeService.GetByNikAsync(nik);
+
+            if (result is null)
+            {
+                return NotFound(new MessageResponseVM(
+                    StatusCodes.Status404NotFound,
+                    HttpStatusCode.NotFound.ToString(),
+                    "Nik Employee Not Found"));
+            }
+
+            return Ok(new SingleResponseVM<EmployeeResponseDto>(
+                StatusCodes.Status200OK,
+                HttpStatusCode.OK.ToString(),
+                "Data Employee Found",
+                result));
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateAsync(EmployeeRequestDto employeeRequestDto)
         {

@@ -128,5 +128,23 @@ namespace API.Services
                 throw; // Error
             }
         }
+
+        public async Task<EmployeeResponseDto?> GetByNikAsync(string nik)
+        {
+            try
+            {
+                var data = await _employeeRepository.GetByNikAsync(nik);
+
+                var dataMap = _mapper.Map<EmployeeResponseDto>(data);
+
+                return dataMap;
+            }
+            catch (Exception e)
+            {
+                HandleException(e);
+
+                throw;
+            }
+        }
     }
 }

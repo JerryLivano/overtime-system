@@ -34,7 +34,7 @@ namespace API.Services
             {
                 var data = _mapper.Map<Overtime>(overtimeRequestDto);
 
-                if (formFile != null && formFile.Length > 0)
+                if (formFile?.Length > 0)
                 {
                     var filePath = await UploadFile(formFile, data.Id);
                     data.Document = filePath;
@@ -145,11 +145,23 @@ namespace API.Services
             }
         }
 
-        public async Task<string> UploadFile(IFormFile formFile, Guid id)
+        public async Task<string?> UploadFile(IFormFile formFile, Guid id)
         {
             try
             {
+                const int fileLimit = 5 * 1024 * 1024;
                 var fileExtension = Path.GetExtension(formFile.FileName);
+
+                if (formFile.Length > fileLimit)
+                {
+                    return null;
+                }
+
+                if (fileExtension is not ".pdf" && fileExtension is not ".docx")
+                {
+                    return null;
+                }
+
                 var fileName = $"{id}{fileExtension}";
                 var filePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Storages", fileName);
 
@@ -172,14 +184,12 @@ namespace API.Services
             {
                 var result = await _overtimeRepository.GetByIdAsync(id);
 
-                if (result == null) 
-                { 
+                if (result == null)
+                {
                     return null;
                 }
 
-                var file = File.ReadAllBytes(result.Document);
-
-                return file;
+                return File.ReadAllBytes(result.Document);
             }
             catch (Exception e)
             {
