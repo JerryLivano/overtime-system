@@ -1,6 +1,4 @@
-﻿using API.DTOs.Roles;
-
-namespace API.DTOs.Accounts
+﻿namespace API.DTOs.Accounts
 {
     public record AccountResponseDto(
         Guid Id,
@@ -9,5 +7,5 @@ namespace API.DTOs.Accounts
         DateTime Expired,
         bool IsUsed,
         bool IsActive,
-        List<string>? Roles);
+        List<string> Roles);
 }

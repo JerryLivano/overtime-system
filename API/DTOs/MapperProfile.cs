@@ -3,6 +3,7 @@ using API.DTOs.Employees;
 using API.DTOs.Overtimes;
 using API.DTOs.Roles;
 using API.Models;
+using API.Utilities.Handlers;
 using AutoMapper;
 using AccountRoleResponseDto = API.DTOs.Accounts.AccountRoleResponseDto;
 
@@ -16,16 +17,18 @@ namespace API.DTOs
             CreateMap<EmployeeRequestDto, Employee>()
                 .ForMember(
                     dest => dest.JoinedDate,
-                    opt => opt.MapFrom(src => new DateTime()));
+                    opt => opt.MapFrom(src => DateTime.Now));
 
             CreateMap<Employee, EmployeeResponseDto>();
 
             // For Accounts
             CreateMap<AccountRequestDto, Account>()
+                .ForMember(dest => dest.Password,
+                    opt => opt.MapFrom(src => BCryptHandler.HashPassword(src.Password)))
                 .ForMember(dest => dest.Otp,
                     opt => opt.MapFrom(src => new Random().Next(1000, 10000)))
                 .ForMember(dest => dest.Expired,
-                    opt => opt.MapFrom(src => new DateTime()))
+                    opt => opt.MapFrom(src => DateTime.Now))
                 .ForMember(dest => dest.IsUsed,
                     opt => opt.MapFrom(src => true))
                 .ForMember(dest => dest.IsActive,

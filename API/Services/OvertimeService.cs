@@ -2,7 +2,9 @@
 using API.Models;
 using API.Repositories.Interfaces;
 using API.Services.Interfaces;
+using API.Utilities.Handlers;
 using AutoMapper;
+using System.Reflection.Metadata;
 
 namespace API.Services
 {
@@ -124,7 +126,7 @@ namespace API.Services
             try
             {
                 var result = await _overtimeRepository.GetByIdAsync(id);
-
+                await _overtimeRepository.ChangeTrackerAsync();
                 if (result is null)
                 {
                     return 0;
@@ -147,56 +149,38 @@ namespace API.Services
 
         public async Task<string?> UploadFile(IFormFile formFile, Guid id)
         {
-            try
+            const int fileLimit = 5 * 1024 * 1024;
+            var fileExtension = Path.GetExtension(formFile.FileName);
+
+            if (formFile.Length > fileLimit)
             {
-                const int fileLimit = 5 * 1024 * 1024;
-                var fileExtension = Path.GetExtension(formFile.FileName);
-
-                if (formFile.Length > fileLimit)
-                {
-                    return null;
-                }
-
-                if (fileExtension is not ".pdf" && fileExtension is not ".docx")
-                {
-                    return null;
-                }
-
-                var fileName = $"{id}{fileExtension}";
-                var filePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Storages", fileName);
-
-                await using var stream = new FileStream(filePath, FileMode.Create);
-                await formFile.CopyToAsync(stream);
-
-                return filePath;
+                return null;
             }
-            catch (Exception e)
+
+            if (fileExtension is not ".pdf" && fileExtension is not ".docx")
             {
-                HandleException(e);
-
-                throw;
+                return null;
             }
+
+            var fileName = $"{id}{fileExtension}";
+            var filePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Storages", fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await formFile.CopyToAsync(stream);
+
+            return filePath;
         }
 
         public async Task<byte[]?> DownloadFile(Guid id)
         {
-            try
+            var result = await _overtimeRepository.GetByIdAsync(id);
+
+            if (result == null)
             {
-                var result = await _overtimeRepository.GetByIdAsync(id);
-
-                if (result == null)
-                {
-                    return null;
-                }
-
-                return File.ReadAllBytes(result.Document);
+                return null;
             }
-            catch (Exception e)
-            {
-                HandleException(e);
 
-                throw;
-            }
+            return File.ReadAllBytes(result.Document);
         }
     }
 }

@@ -108,7 +108,7 @@ namespace API.Services
             try
             {
                 var result = await _roleRepository.GetByIdAsync(id);
-
+                await _roleRepository.ChangeTrackerAsync();
                 if (result is null)
                 {
                     return 0;

@@ -31,7 +31,7 @@ namespace API.Controllers
             }
 
             var memory = await _overtimeService.DownloadFile(id);
-            var contentType = "application/octet-stream";
+            const string contentType = "application/octet-stream";
             var fileName = Path.GetFileName(result.Document);
 
             if (memory is null)
@@ -85,7 +85,7 @@ namespace API.Controllers
                 result)); // Tampilkan data yang sudah ditemukan
         }
 
-        [HttpPost]
+        [HttpPost("request")]
         public async Task<IActionResult> CreateAsync([FromForm] OvertimeRequestDto overtimeRequestDto, IFormFile formFile)
         {
             await _overtimeService.CreateAsync(overtimeRequestDto, formFile);

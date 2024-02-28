@@ -1,4 +1,5 @@
 ﻿using API.DTOs.Accounts;
+using API.DTOs.Employees;
 using API.Models;
 using API.Repositories.Interfaces;
 using API.Services.Interfaces;
@@ -13,14 +14,16 @@ namespace API.Services
         private readonly IAccountRepository _accountRepository;
         private readonly IAccountRoleRepository _accountRoleRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IEmployeeRepository _employeeRepository;
         private readonly IMapper _mapper;
 
-        public AccountService(IAccountRepository accountRepository, IMapper mapper, IAccountRoleRepository accountRoleRepository, IRoleRepository roleRepository)
+        public AccountService(IAccountRepository accountRepository, IMapper mapper, IAccountRoleRepository accountRoleRepository, IRoleRepository roleRepository, IEmployeeRepository employeeRepository)
         {
             _accountRepository = accountRepository;
             _accountRoleRepository = accountRoleRepository;
             _roleRepository = roleRepository;
             _mapper = mapper;
+            _employeeRepository = employeeRepository;
         }
 
         private static void HandleException(Exception e)
@@ -96,7 +99,7 @@ namespace API.Services
             catch (Exception e)
             {
                 HandleException(e);
-                
+
                 throw;
             }
         }
@@ -131,7 +134,7 @@ namespace API.Services
                 IEnumerable<Account>? data = await _accountRepository.GetAllAsync();
 
                 var dataMap = _mapper.Map<IEnumerable<AccountResponseDto>>(data);
-                
+
                 return dataMap; // Success
             }
             catch (Exception e)
@@ -165,7 +168,7 @@ namespace API.Services
             try
             {
                 var result = await _accountRepository.GetByIdAsync(id);
-
+                await _accountRepository.ChangeTrackerAsync();
                 if (result is null)
                 {
                     return 0;
@@ -184,6 +187,49 @@ namespace API.Services
 
                 throw; // Error
             }
+        }
+
+        public async Task<int> RegisterAsync(RegisterDto registerDto)
+        {
+            var employee = _mapper.Map<Employee>(new EmployeeRequestDto(
+                registerDto.Nik,
+                registerDto.FirstName,
+                registerDto.LastName,
+                registerDto.Salary,
+                registerDto.Email,
+                registerDto.Position,
+                registerDto.Department,
+                registerDto.ManagerId));
+
+            var employeeResult = await _employeeRepository.CreateAsync(employee);
+            if (employeeResult is null)
+            {
+                return 0;
+            }
+
+            if (registerDto.Password != registerDto.ConfirmPassword)
+            {
+                return -1;
+            }
+
+            var account = _mapper.Map<Account>(new AccountRequestDto(employee.Id, registerDto.Password));
+            var accountResult = await _accountRepository.CreateAsync(account);
+
+            if (accountResult is null)
+            {
+                return 0;
+            }
+
+            var role = await _roleRepository.GetByNameAsync("Employee");
+            var accountRole = _mapper.Map<AccountRole>(new AddAccountRoleRequestDto(account.Id, role!.Id));
+            var accountRoleResult = await _accountRoleRepository.CreateAsync(accountRole);
+
+            if (accountRoleResult is null)
+            {
+                return 0;
+            }
+
+            return 1;
         }
     }
 }

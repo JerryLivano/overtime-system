@@ -38,11 +38,17 @@ namespace API.Repositories.Data
             var entity = await _context.Set<T>().FindAsync(id);
             return entity;
         }
-        
+
         public async Task UpdateAsync(T param)
         {
             _context.Set<T>().Update(param);
             await _context.SaveChangesAsync();
+        }
+
+        public Task ChangeTrackerAsync()
+        {
+            _context.ChangeTracker.Clear();
+            return Task.CompletedTask;
         }
     }
 }

@@ -26,9 +26,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
 // Register services
 builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddScoped<IAccountRoleService, AccountRoleService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-builder.Services.AddScoped<IOvertimeRequestService, OvertimeRequestService>();
 builder.Services.AddScoped<IOvertimeService, OvertimeService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 

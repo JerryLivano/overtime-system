@@ -1,6 +1,7 @@
 ﻿using API.Data;
 using API.Models;
 using API.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Repositories.Data
 {
@@ -8,5 +9,10 @@ namespace API.Repositories.Data
     {
         public RoleRepository(OvertimeSystemDbContext context) : base(context)
         { }
+
+        public async Task<Role?> GetByNameAsync(string name)
+        {
+            return await _context.Set<Role>().FirstOrDefaultAsync(r => r.Name.Contains(name));
+        }
     }
 }

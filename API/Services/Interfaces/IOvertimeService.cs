@@ -10,7 +10,7 @@ namespace API.Services.Interfaces
         Task<int> CreateAsync(OvertimeRequestDto overtimeRequestDto, IFormFile formFile);
         Task<int> UpdateAsync(Guid id, OvertimeRequestDto overtimeRequestDto);
         Task<int> DeleteAsync(Guid id);
-        Task<string?> UploadFile(IFormFile formFile, Guid id);
+        Task<string> UploadFile(IFormFile formFile, Guid id);
         Task<byte[]?> DownloadFile(Guid id);
     }
 }

@@ -51,6 +51,21 @@ namespace API.Controllers
             };
         }
 
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterAsync(RegisterDto registerDto)
+        {
+            var result = await _accountService.RegisterAsync(registerDto);
+
+            return result switch
+            {
+                0 => NotFound(new MessageResponseVM(StatusCodes.Status404NotFound, HttpStatusCode.NotFound.ToString(),
+                    "Register Failed")),
+                -1 => NotFound(new MessageResponseVM(StatusCodes.Status404NotFound, HttpStatusCode.NotFound.ToString(),
+                    "Password Not Match")),
+                _ => Ok(new MessageResponseVM(StatusCodes.Status200OK, HttpStatusCode.OK.ToString(), "Account Created"))
+            };
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {

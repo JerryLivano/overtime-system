@@ -108,7 +108,7 @@ namespace API.Services
             try
             {
                 var result = await _employeeRepository.GetByIdAsync(id);
-
+                await _employeeRepository.ChangeTrackerAsync();
                 if (result is null)
                 {
                     return 0;
@@ -117,6 +117,8 @@ namespace API.Services
                 var employee = _mapper.Map<Employee>(employeeRequestDto);
 
                 employee.Id = id;
+                employee.Nik = result.Nik;
+                employee.JoinedDate = result.JoinedDate;
                 await _employeeRepository.UpdateAsync(employee);
 
                 return 1; // Success

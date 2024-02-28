@@ -10,5 +10,6 @@ namespace API.Repositories.Interfaces
         Task<T> CreateAsync(T param);
         Task UpdateAsync(T param);
         Task DeleteAsync(T param);
+        Task ChangeTrackerAsync();
     }
 }
