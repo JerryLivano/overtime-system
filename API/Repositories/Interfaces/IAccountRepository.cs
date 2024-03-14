@@ -2,5 +2,7 @@
 
 namespace API.Repositories.Interfaces
 {
-    public interface IAccountRepository : IGeneralRepository<Account> { }
+    public interface IAccountRepository : IGeneralRepository<Account> 
+    {
+    }
 }

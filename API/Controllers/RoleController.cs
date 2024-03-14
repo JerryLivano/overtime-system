@@ -2,10 +2,12 @@
 using API.DTOs.Roles;
 using API.Services.Interfaces;
 using API.Utilities.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [ApiController]
     [Route("role")]
     public class RoleController : ControllerBase

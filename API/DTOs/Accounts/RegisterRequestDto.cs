@@ -1,7 +1,6 @@
 ﻿namespace API.DTOs.Accounts
 {
-    public record RegisterDto(
-        string Nik,
+    public record RegisterRequestDto(
         string FirstName,
         string LastName,
         int Salary,

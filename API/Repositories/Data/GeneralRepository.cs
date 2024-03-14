@@ -1,6 +1,7 @@
 ﻿using API.Data;
 using API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace API.Repositories.Data
 {
@@ -50,5 +51,11 @@ namespace API.Repositories.Data
             _context.ChangeTracker.Clear();
             return Task.CompletedTask;
         }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
+
     }
 }

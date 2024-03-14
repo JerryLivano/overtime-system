@@ -2,6 +2,7 @@
 using API.Models;
 using API.Repositories.Interfaces;
 using API.Services.Interfaces;
+using API.Utilities.Handlers;
 using AutoMapper;
 
 namespace API.Services
@@ -19,134 +20,62 @@ namespace API.Services
             _mapper = mapper;
         }
 
-        private static void HandleException(Exception e)
-        {
-            Console.WriteLine(e.InnerException?.
-                    Message ?? e.Message,
-                Console.ForegroundColor = ConsoleColor.Red);
-        }
-
         public async Task<int> CreateAsync(EmployeeRequestDto employeeRequestDto)
         {
-            try
-            {
-                var employee = _mapper.Map<Employee>(employeeRequestDto);
+            var employee = _mapper.Map<Employee>(employeeRequestDto);
+            employee.Nik = GenerateHandler.Nik(_employeeRepository.GetLastNik());
 
-                await _employeeRepository.CreateAsync(employee);
+            await _employeeRepository.CreateAsync(employee);
 
-                return 1; // Success
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw; // Error
-            }
+            return 1; // Success
         }
 
         public async Task<int> DeleteAsync(Guid id)
         {
-            try
+            var result = await _employeeRepository.GetByIdAsync(id);
+
+            if (result is null)
             {
-                var result = await _employeeRepository.GetByIdAsync(id);
-
-                if (result is null)
-                {
-                    return 0;
-                }
-
-                await _employeeRepository.DeleteAsync(result);
-
-                return 1; // Success
+                return 0;
             }
-            catch (Exception e)
-            {
-                HandleException(e);
 
-                throw; // Error
-            }
+            await _employeeRepository.DeleteAsync(result);
+
+            return 1; // Success
         }
 
         public async Task<IEnumerable<EmployeeResponseDto>?> GetAllAsync()
         {
-            try
-            {
-                var data = await _employeeRepository.GetAllAsync();
+            var data = await _employeeRepository.GetAllAsync();
 
-                var dataMap = _mapper.Map<IEnumerable<EmployeeResponseDto>>(data);
+            var dataMap = _mapper.Map<IEnumerable<EmployeeResponseDto>>(data);
 
-                return dataMap; // Success
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw; // Error
-            }
+            return dataMap; // Success
         }
 
         public async Task<EmployeeResponseDto?> GetByIdAsync(Guid id)
         {
-            try
-            {
-                var data = await _employeeRepository.GetByIdAsync(id);
+            var data = await _employeeRepository.GetByIdAsync(id);
 
-                var dataMap = _mapper.Map<EmployeeResponseDto>(data);
+            var dataMap = _mapper.Map<EmployeeResponseDto>(data);
 
-                return dataMap; // Success
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw; // Error
-            }
+            return dataMap; // Success
         }
 
         public async Task<int> UpdateAsync(Guid id, EmployeeRequestDto employeeRequestDto)
         {
-            try
-            {
-                var result = await _employeeRepository.GetByIdAsync(id);
-                await _employeeRepository.ChangeTrackerAsync();
-                if (result is null)
-                {
-                    return 0;
-                }
+            var result = await _employeeRepository.GetByIdAsync(id);
+            await _employeeRepository.ChangeTrackerAsync();
+            if (result is null) return 0;
 
-                var employee = _mapper.Map<Employee>(employeeRequestDto);
+            var employee = _mapper.Map<Employee>(employeeRequestDto);
 
-                employee.Id = id;
-                employee.Nik = result.Nik;
-                employee.JoinedDate = result.JoinedDate;
-                await _employeeRepository.UpdateAsync(employee);
+            employee.Id = id;
+            employee.Nik = result.Nik;
+            employee.JoinedDate = result.JoinedDate;
+            await _employeeRepository.UpdateAsync(employee);
 
-                return 1; // Success
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw; // Error
-            }
-        }
-
-        public async Task<EmployeeResponseDto?> GetByNikAsync(string nik)
-        {
-            try
-            {
-                var data = await _employeeRepository.GetByNikAsync(nik);
-
-                var dataMap = _mapper.Map<EmployeeResponseDto>(data);
-
-                return dataMap;
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw;
-            }
+            return 1; // Success
         }
     }
 }

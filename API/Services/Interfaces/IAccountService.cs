@@ -12,6 +12,9 @@ namespace API.Services.Interfaces
         Task<int> CreateAsync(AccountRequestDto accountRequestDto);
         Task<int> UpdateAsync(Guid id, AccountRequestDto accountRequestDto);
         Task<int> DeleteAsync(Guid id);
-        Task<int> RegisterAsync(RegisterDto registerDto);
+        Task<int> RegisterAsync(RegisterRequestDto registerDto);
+        Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequestDto);
+        Task<ForgotPasswordResponseDto?> ForgotPasswordAsync(string email);
+        Task<int> ChangePasswordAsync(ChangePasswordRequestDto changePasswordRequestDto);
     }
 }

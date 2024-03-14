@@ -10,5 +10,5 @@
         string Email,
         string Position,
         string Department,
-        Guid? ManagerId);
+        Guid ManagerId);
 }

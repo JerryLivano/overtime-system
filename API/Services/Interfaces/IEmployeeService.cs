@@ -10,6 +10,5 @@ namespace API.Services.Interfaces
         Task<int> CreateAsync(EmployeeRequestDto employeeRequestDto);
         Task<int> UpdateAsync(Guid id, EmployeeRequestDto employeeRequestDto);
         Task<int> DeleteAsync(Guid id);
-        Task<EmployeeResponseDto?> GetByNikAsync(string nik);
     }
 }

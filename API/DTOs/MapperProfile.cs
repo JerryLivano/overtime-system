@@ -19,14 +19,30 @@ namespace API.DTOs
                     dest => dest.JoinedDate,
                     opt => opt.MapFrom(src => DateTime.Now));
 
+            CreateMap<RegisterRequestDto, Employee>()
+                .ForMember(dest => dest.JoinedDate,
+                    opt => opt.MapFrom(src => DateTime.Now));
+
             CreateMap<Employee, EmployeeResponseDto>();
 
             // For Accounts
+            CreateMap<RegisterRequestDto, Account>()
+                .ForMember(dest => dest.Password,
+                      opt => opt.MapFrom(src => BCryptHandler.HashPassword(src.Password)))
+                .ForMember(dest => dest.Otp,
+                      opt => opt.MapFrom(src => 0))
+                .ForMember(dest => dest.Expired,
+                      opt => opt.MapFrom(src => DateTime.Now))
+                .ForMember(dest => dest.IsUsed,
+                      opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.IsActive,
+                      opt => opt.MapFrom(src => true));
+
             CreateMap<AccountRequestDto, Account>()
                 .ForMember(dest => dest.Password,
                     opt => opt.MapFrom(src => BCryptHandler.HashPassword(src.Password)))
                 .ForMember(dest => dest.Otp,
-                    opt => opt.MapFrom(src => new Random().Next(1000, 10000)))
+                    opt => opt.MapFrom(src => 0))
                 .ForMember(dest => dest.Expired,
                     opt => opt.MapFrom(src => DateTime.Now))
                 .ForMember(dest => dest.IsUsed,
@@ -57,6 +73,15 @@ namespace API.DTOs
                     opt => opt.MapFrom(src => Guid.NewGuid()));
 
             CreateMap<Overtime, OvertimeResponseDto>();
+
+            CreateMap<Overtime, OvertimeRequest>()
+                .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Reason))
+                .ForMember(dest => dest.OvertimeId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Timestamp, opt => opt.MapFrom(src => DateTime.Now));
+
+            CreateMap<Overtime, OvertimeDetailResponseDto>()
+                .ForMember(dest => dest.Requests,
+                    opt => opt.MapFrom(src => src.OvertimeRequests.Select(or => new OvertimeRequestResponseDto(or.Timestamp, or.Status, or.Comment))));
         }
     }
 }

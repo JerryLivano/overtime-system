@@ -5,14 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Repositories.Data
 {
-    public class EmployeeRepository :  GeneralRepository<Employee>, IEmployeeRepository
+    public class EmployeeRepository : GeneralRepository<Employee>, IEmployeeRepository
     {
         public EmployeeRepository(OvertimeSystemDbContext context) : base(context)
         { }
 
-        public async Task<Employee?> GetByNikAsync(string nik)
+        public async Task<Employee?> GetByEmailAsync(string email)
         {
-            return await _context.Set<Employee>().Where(e => e.Nik == nik).FirstOrDefaultAsync();
+            return await _context.Set<Employee>().FirstOrDefaultAsync(e => e.Email == email);
+        }
+
+        public string? GetLastNik()
+        {
+            return _context.Set<Employee>().ToList().Select(e => e.Nik).LastOrDefault();
         }
     }
 }

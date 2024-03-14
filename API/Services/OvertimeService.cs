@@ -14,173 +14,158 @@ namespace API.Services
 
         private readonly IOvertimeRepository _overtimeRepository;
         private readonly IMapper _mapper;
-        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IOvertimeRequestRepository _overtimeRequestRepository;
 
-        public OvertimeService(IOvertimeRepository overtimeRepository, IMapper mapper, IWebHostEnvironment webHostEnvironment)
+        public OvertimeService(IOvertimeRepository overtimeRepository, IMapper mapper, IOvertimeRequestRepository overtimeRequestRepository)
         {
             _overtimeRepository = overtimeRepository;
-            _webHostEnvironment = webHostEnvironment;
             _mapper = mapper;
+            _overtimeRequestRepository = overtimeRequestRepository;
         }
 
-        private static void HandleException(Exception e)
+        public async Task<OvertimeDetailResponseDto> GetDetailByOvertimeIdAsync(Guid overtimeId)
         {
-            Console.WriteLine(e.InnerException?.
-                    Message ?? e.Message,
-                Console.ForegroundColor = ConsoleColor.Red);
+            var data = await _overtimeRepository.GetByIdAsync(overtimeId);
+
+            var dataMap = _mapper.Map<OvertimeDetailResponseDto>(data);
+
+            return dataMap; // success
         }
 
-        public async Task<int> CreateAsync(OvertimeRequestDto overtimeRequestDto, IFormFile formFile)
+        public async Task<IEnumerable<OvertimeDetailResponseDto>?> GetDetailAsync(Guid accountId)
         {
-            try
+            var data = await _overtimeRepository.GetAllAsync();
+
+            data = data.Where(x => x.OvertimeRequests!.Any(or => or.AccountId == accountId));
+
+            var dataMap = _mapper.Map<IEnumerable<OvertimeDetailResponseDto>>(data);
+
+            return dataMap;
+        }
+
+        public async Task<int> CreateAsync(OvertimeRequestDto overtimeRequestDto, IFormFile? formFile)
+        {
+            var data = _mapper.Map<Overtime>(overtimeRequestDto);
+
+            if (formFile is null) return 0;
+
+            const int fileLimit = 5 * 1024 * 1024;
+            var fileExtension = Path.GetExtension(formFile.FileName);
+            if (formFile.Length > fileLimit) return -1;
+            if (fileExtension is not ".pdf" && fileExtension is not ".docx") return -2;
+
+            if (formFile?.Length > 0)
             {
-                var data = _mapper.Map<Overtime>(overtimeRequestDto);
-
-                if (formFile?.Length > 0)
-                {
-                    var filePath = await UploadFile(formFile, data.Id);
-                    data.Document = filePath;
-                }
-
-                await _overtimeRepository.CreateAsync(data);
-
-                return 1; // Success
+                data.Document = await DocumentHandler.UploadFile(formFile, data.Id);
             }
-            catch (Exception e)
-            {
-                HandleException(e);
 
-                throw; // Error
-            }
+            await _overtimeRepository.CreateAsync(data);
+
+            return 1; // Success
         }
 
         public async Task<int> DeleteAsync(Guid id)
         {
-            try
+            var result = await _overtimeRepository.GetByIdAsync(id);
+
+            if (result is null) return 0;
+
+            if (!string.IsNullOrEmpty(result.Document))
             {
-                var result = await _overtimeRepository.GetByIdAsync(id);
-
-                if (result is null)
-                {
-                    return 0;
-                }
-
-                if (!string.IsNullOrEmpty(result.Document))
-                {
-                    if (File.Exists(result.Document))
-                    {
-                        File.Delete(result.Document);
-                    }
-                }
-
-                await _overtimeRepository.DeleteAsync(result);
-
-                return 1; // Success
+                if (File.Exists(result.Document)) File.Delete(result.Document);
             }
-            catch (Exception e)
-            {
-                HandleException(e);
 
-                throw; // Error
-            }
+            result.Id = id;
+            await _overtimeRepository.DeleteAsync(result);
+
+            return 1; // Success
         }
 
         public async Task<IEnumerable<OvertimeResponseDto>?> GetAllAsync()
         {
-            try
-            {
-                var data = await _overtimeRepository.GetAllAsync();
+            var data = await _overtimeRepository.GetAllAsync();
 
-                var dataMap = _mapper.Map<IEnumerable<OvertimeResponseDto>>(data);
+            var dataMap = _mapper.Map<IEnumerable<OvertimeResponseDto>>(data);
 
-                return dataMap; // Success
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw; // Error
-            }
+            return dataMap; // Success
         }
 
         public async Task<OvertimeResponseDto?> GetByIdAsync(Guid id)
         {
-            try
-            {
-                var data = await _overtimeRepository.GetByIdAsync(id);
+            var data = await _overtimeRepository.GetByIdAsync(id);
 
-                var dataMap = _mapper.Map<OvertimeResponseDto>(data);
+            var dataMap = _mapper.Map<OvertimeResponseDto>(data);
 
-                return dataMap; // Success
-            }
-            catch (Exception e)
-            {
-                HandleException(e);
-
-                throw; // Error
-            }
+            return dataMap; // Success
         }
 
         public async Task<int> UpdateAsync(Guid id, OvertimeRequestDto overtimeRequestDto)
         {
+            var result = await _overtimeRepository.GetByIdAsync(id);
+            await _overtimeRepository.ChangeTrackerAsync();
+            if (result is null) return 0;
+
+            var overtime = _mapper.Map<Overtime>(overtimeRequestDto);
+
+            overtime.Id = id;
+            await _overtimeRepository.UpdateAsync(overtime);
+
+            return 1; // Success
+        }
+
+        public async Task<int> RequestOvertimeAsync(IFormFile? formFile, OvertimeRequestDto overtimeRequestDto)
+        {
+            if (formFile is null) return 0; // file not found
+            if (formFile.Length is 0) return 0; // file not found
+
+            await using var transaction = await _overtimeRepository.BeginTransactionAsync();
+
             try
             {
-                var result = await _overtimeRepository.GetByIdAsync(id);
-                await _overtimeRepository.ChangeTrackerAsync();
-                if (result is null)
-                {
-                    return 0;
-                }
-
                 var overtime = _mapper.Map<Overtime>(overtimeRequestDto);
 
-                overtime.Id = id;
-                await _overtimeRepository.UpdateAsync(overtime);
+                const int fileLimit = 5 * 1024 * 1024;
+                var fileExtension = Path.GetExtension(formFile.FileName);
+                if (formFile.Length > fileLimit) return 0;
+                if (fileExtension is not ".pdf" && fileExtension is not ".docx") return -1;
 
-                return 1; // Success
+                overtime.Document = await DocumentHandler.UploadFile(formFile, overtime.Id);
+
+                var data = await _overtimeRepository.CreateAsync(overtime);
+                var overtimeRequest = _mapper.Map<OvertimeRequest>(data);
+                overtimeRequest.AccountId = overtimeRequestDto.AccountId;
+
+                await _overtimeRequestRepository.CreateAsync(overtimeRequest);
+
+                await transaction.CommitAsync();
+                return 1; // success
             }
-            catch (Exception e)
+            catch
             {
-                HandleException(e);
-
-                throw; // Error
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 
-        public async Task<string?> UploadFile(IFormFile formFile, Guid id)
-        {
-            const int fileLimit = 5 * 1024 * 1024;
-            var fileExtension = Path.GetExtension(formFile.FileName);
-
-            if (formFile.Length > fileLimit)
-            {
-                return null;
-            }
-
-            if (fileExtension is not ".pdf" && fileExtension is not ".docx")
-            {
-                return null;
-            }
-
-            var fileName = $"{id}{fileExtension}";
-            var filePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Storages", fileName);
-
-            await using var stream = new FileStream(filePath, FileMode.Create);
-            await formFile.CopyToAsync(stream);
-
-            return filePath;
-        }
-
-        public async Task<byte[]?> DownloadFile(Guid id)
+        public async Task<OvertimeDownloadResponseDto> DownloadFileAsync(Guid id)
         {
             var result = await _overtimeRepository.GetByIdAsync(id);
 
-            if (result == null)
+            if (result == null) return new OvertimeDownloadResponseDto(BitConverter.GetBytes(0), "0", "0"); // id not found
+
+            if (string.IsNullOrEmpty(result.Document)) return new OvertimeDownloadResponseDto(BitConverter.GetBytes(-1), "-1", "-1");
+
+            byte[] document;
+            try
             {
-                return null;
+                document = DocumentHandler.DownloadFile(result.Document);
+            }
+            catch
+            {
+                throw new Exception("File not exist in server");
             }
 
-            return File.ReadAllBytes(result.Document);
+            return new OvertimeDownloadResponseDto(document, "application/octet-stream", Path.GetFileName(result.Document));
         }
     }
 }
